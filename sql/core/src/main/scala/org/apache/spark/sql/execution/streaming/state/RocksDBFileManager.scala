@@ -135,7 +135,6 @@ class RocksDBFileManager(
 
   private val versionToRocksDBFiles = new ConcurrentHashMap[Long, Seq[RocksDBImmutableFile]]
 
-
   // used to keep a mapping of the exact Dfs file that was used to create a local SST file.
   // The reason this is a separate map because versionToRocksDBFiles can contain multiple similar
   // SST files to a particular local file (for example 1.sst can map to 1-UUID1.sst in v1 and
@@ -157,6 +156,21 @@ class RocksDBFileManager(
   private def codec = CompressionCodec.createCodec(sparkConf, codecName)
 
   @volatile private var rootDirChecked: Boolean = false
+
+  def deepCopy(): RocksDBFileManager = {
+    val newFileManager = new RocksDBFileManager(
+      dfsRootDir,
+      localTempDir,
+      hadoopConf,
+      codecName,
+      loggingId
+    )
+
+    newFileManager.versionToRocksDBFiles.putAll(versionToRocksDBFiles)
+    newFileManager.localFilesToDfsFiles.putAll(localFilesToDfsFiles)
+
+    newFileManager
+  }
 
   def getChangeLogWriter(
       version: Long,
